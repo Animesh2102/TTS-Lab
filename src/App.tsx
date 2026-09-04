@@ -685,7 +685,7 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-base sm:text-lg font-bold tracking-tight leading-tight text-white">
-                Text to Speech <span className="text-[#C5A059]">Studio</span>
+                Text to Speech <span className="text-[#C5A059]">Lab</span>
               </h1>
               <p className="text-xs hidden sm:block text-white/40">
                 Convert script to lifelike neural audio with tone and voice personas
