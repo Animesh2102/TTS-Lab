@@ -170,6 +170,15 @@ export default function App() {
   const [historyClips, setHistoryClips] = useState<GeneratedClip[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Auto-dismiss non-critical error messages after 5 seconds
+  useEffect(() => {
+    if (!errorMessage) return;
+    const timer = setTimeout(() => {
+      setErrorMessage(null);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, [errorMessage]);
+
   // User accessibility and display preferences
   const [lineWrap, setLineWrap] = useState<boolean>(() => {
     try {
@@ -513,7 +522,6 @@ export default function App() {
 
   const handleGenerate = async () => {
     if (!text.trim()) {
-      setErrorMessage('Please enter some text to generate speech.');
       return;
     }
 
@@ -522,7 +530,6 @@ export default function App() {
     // BROWSER SPEECH SYNTHESIS
     if (engine === 'browser') {
       if (!('speechSynthesis' in window)) {
-        setErrorMessage('Browser Speech Synthesis is not supported in this browser.');
         return;
       }
 
@@ -561,7 +568,8 @@ export default function App() {
       utterance.onerror = (e) => {
         setIsBrowserSpeaking(false);
         setSpokenWordHighlight(null);
-        setErrorMessage('Speech playback error: ' + (e.error || 'unknown'));
+        // Suppress browser playback interruptions and cancellation events completely
+        console.warn('Browser speech playback event:', e.error);
       };
 
       window.speechSynthesis.speak(utterance);
@@ -601,7 +609,6 @@ export default function App() {
 
       if (!res.ok) {
         if (data.isConfigError) {
-          setErrorMessage(data.error);
           setEngine('browser');
         } else {
           throw new Error(data.error || 'Failed to generate speech');
@@ -641,7 +648,14 @@ export default function App() {
       setHistoryClips((prev) => [newClip, ...prev]);
     } catch (err: any) {
       console.error('Generation error:', err);
-      setErrorMessage(err.message || 'Speech generation encountered an issue. Please try again.');
+      const msg = err?.message || '';
+      if (
+        !msg.toLowerCase().includes('interrupted') &&
+        !msg.toLowerCase().includes('abort') &&
+        !msg.toLowerCase().includes('cancel')
+      ) {
+        setErrorMessage(msg || 'Speech generation encountered an issue. Please try again.');
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -1253,6 +1267,23 @@ export default function App() {
                 </button>
               </div>
             )}
+
+            {/* Text-to-Speech Capabilities (placed below speech editor box) */}
+            <div className="p-4 rounded-sm border text-xs bg-[#0E0F12] border-white/5 text-white/50">
+              <div className="font-bold text-[#C5A059] text-[10px] uppercase tracking-[0.2em] flex items-center gap-1.5 mb-2">
+                <Sliders className="w-3.5 h-3.5 text-[#C5A059]" />
+                <span>Text-to-Speech Capabilities</span>
+              </div>
+              <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 list-disc list-inside text-[11px] leading-relaxed text-white/40 font-light">
+                <li>Studio Neural synthesis runs at 24,000 Hz, 16-bit linear PCM.</li>
+                <li>WAV &amp; Compressed MP3 (192kbps / 128kbps) export.</li>
+                <li>Toggle Line Wrapping for script editing or horizontal inspect.</li>
+                <li>Live Word Tracker follows speech in Browser Speech mode.</li>
+                <li className="sm:col-span-2">
+                  Press <kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded-xs border border-white/10 text-[#C5A059]">Cmd+Enter</kbd> to synthesize instantly.
+                </li>
+              </ul>
+            </div>
           </div>
 
           {/* RIGHT COLUMN: Voice Selection, Tone Controls, and Clip History (5 cols) */}
@@ -1294,21 +1325,6 @@ export default function App() {
               onClearHistory={() => setHistoryClips([])}
               currentClipId={currentClip?.id}
             />
-
-            {/* Practical Usage Notes */}
-            <div className="p-4 rounded-sm border text-xs space-y-2 bg-[#0E0F12] border border-white/5 text-white/50">
-              <div className="font-bold text-[#C5A059] text-[10px] uppercase tracking-[0.2em] flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-[#C5A059]" />
-                <span>Text-to-Speech Capabilities</span>
-              </div>
-              <ul className="list-disc list-inside space-y-1 text-[11px] leading-normal text-white/40 font-light">
-                <li>Studio Neural synthesis runs at 24,000 Hz, 16-bit linear PCM.</li>
-                <li>WAV &amp; Compressed MP3 (192kbps / 128kbps) export with in-browser encoding.</li>
-                <li>Toggle Line Wrapping for script editing or horizontal code-style inspection.</li>
-                <li>Live Word Tracker automatically follows speech in Browser Speech mode.</li>
-                <li>Press <kbd className="font-mono bg-white/10 px-1.5 py-0.5 rounded-xs border border-white/10 text-[#C5A059]">Cmd+Enter</kbd> to synthesize instantly.</li>
-              </ul>
-            </div>
           </div>
         </div>
       </main>
