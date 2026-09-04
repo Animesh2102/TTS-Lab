@@ -1,0 +1,7 @@
+{
+  "name": "Text to Speech Generator",
+  "description": "Convert text into lifelike natural speech using AI neural voice models and browser synthesis with custom tones, speed, and audio export.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
